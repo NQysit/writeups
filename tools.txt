@@ -1,0 +1,29 @@
+
+
+== Tools ==
+
+# Programming
+
+ - Python
+ - C
+
+# Reversing
+
+ - radare2
+ - gdb
+
+# Web Vulnerabilities
+
+ - sqlmap
+
+# Networking
+
+ - tcpdump
+ - wireshark
+ - scapy
+ - nmap
+ - snort
+ 
+# Search engines
+
+ - shodan
