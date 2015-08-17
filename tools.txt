@@ -38,6 +38,6 @@
  - emacs
  - vim 
 
-# Windows mangers
+# Windows managers
 
  - i3
