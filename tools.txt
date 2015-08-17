@@ -15,6 +15,7 @@
 # Web Vulnerabilities
 
  - sqlmap
+ - xsser
 
 # Networking
 
@@ -24,6 +25,20 @@
  - nmap
  - snort
  
+# Pentesting
+
+ - maltego
+ - metasploit
+ 
 # Search engines
 
  - shodan
+ - duckduckgo
+ 
+# Text editors
+ 
+ - emacs
+ 
+# Windows mangers
+
+ - i3
