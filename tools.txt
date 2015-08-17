@@ -1,5 +1,3 @@
-
-
 == Tools ==
 
 # Programming
@@ -38,7 +36,8 @@
 # Text editors
  
  - emacs
- 
+ - vim 
+
 # Windows mangers
 
  - i3
