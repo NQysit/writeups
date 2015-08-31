@@ -1,0 +1,352 @@
+﻿
+                           ==sexyplatypussies.com==
+
+                              0x00 IOLI-crackme
+
+|=-----------------------------------------------------------------------=|
+|=---------------=[                                      ]=--------------=|
+|=---------------=[          Crackme 0x04                ]=--------------=|
+|=---------------=[                                      ]=--------------=|
+|=-----------------------------------------------------------------------=|
+
+Let's go with crackme0x04 =)
+
+$ ./crackme0x04
+IOLI Crackme Level 0x04
+Password: Hello!
+Password Incorrect!
+
+The first thing I did was going straight to radare2 to list the 
+instructions of the main function.
+
+$ r2 crackme0x04
+
+[0x080483d0]> aaa ; this command analyzes the binary
+[0x080483d0]> pdf@sym.main ; this means print disassembly function main
+
+/ (fcn) sym.main 92
+|          ; var int local_30     @ ebp-0x78
+|          ; DATA XREF from 0x080483e7 (entry0)
+|          ;-- main:
+|          0x08048509    55             push ebp
+|          0x0804850a    89e5           mov ebp, esp
+|          0x0804850c    81ec88000000   sub esp, 0x88
+|          0x08048512    83e4f0         and esp, 0xfffffff0
+|          0x08048515    b800000000     mov eax, 0
+|          0x0804851a    83c00f         add eax, 0xf
+|          0x0804851d    83c00f         add eax, 0xf
+|          0x08048520    c1e804         shr eax, 4
+|          0x08048523    c1e004         shl eax, 4
+|          0x08048526    29c4           sub esp, eax
+|          0x08048528    c704245e8604.  mov dword [esp], str.IOLI_Crackme_Level_0x04_n ; [0x804865e:4]=0x494c4f49  LEA str.IOLI_Crackme_Level_0x04_n ; "IOLI Crackme Level 0x04." @ 0x804865e
+|          0x0804852f    e860feffff     call sym.imp.printf            ;sym.imp.printf()
+|          0x08048534    c70424778604.  mov dword [esp], str.Password: ; [0x8048677:4]=0x73736150  LEA str.Password: ; "Password: " @ 0x8048677
+|          0x0804853b    e854feffff     call sym.imp.printf            ;sym.imp.printf()
+|          0x08048540    8d4588         lea eax, [ebp-local_30]
+|          0x08048543    89442404       mov dword [esp + 4], eax
+|          0x08048547    c70424828604.  mov dword [esp], 0x8048682     ; [0x8048682:4]=0x7325  ; "%s" @ 0x8048682
+|          0x0804854e    e821feffff     call sym.imp.scanf             ;sym.imp.scanf()
+|          0x08048553    8d4588         lea eax, [ebp-local_30]
+|          0x08048556    890424         mov dword [esp], eax
+|          0x08048559    e826ffffff     call sym.check                 ;sym.check()
+|          0x0804855e    b800000000     mov eax, 0
+|          0x08048563    c9             leave
+\          0x08048564    c3             ret
+
+
+There is nothing surprising about the main. First of all we have the 
+instructions that prepares the stack frame for the function:
+
+|          0x08048509    55             push ebp
+|          0x0804850a    89e5           mov ebp, esp
+|          0x0804850c    81ec88000000   sub esp, 0x88
+|          0x08048512    83e4f0         and esp, 0xfffffff0
+|          0x08048515    b800000000     mov eax, 0
+|          0x0804851a    83c00f         add eax, 0xf
+|          0x0804851d    83c00f         add eax, 0xf
+|          0x08048520    c1e804         shr eax, 4
+|          0x08048523    c1e004         shl eax, 4
+|          0x08048526    29c4           sub esp, eax
+
+
+Basically it saves the old value of the register EBP, then points EBP 
+toward the former head of the stack and substracts some number to ESP 
+(the stack grows toward the lower memory directions) in order to create 
+a gap between EBP and ESP. In this space is where the main function 
+stores its local data, so the compiler makes sure that the space will 
+be enough to fit all the data.
+
+Next, the program prints some strings.
+
+|          0x08048528    c704245e8604.  mov dword [esp], str.IOLI_Crackme_Level_0x04_n ; [0x804865e:4]=0x494c4f49  LEA str.IOLI_Crackme_Level_0x04_n ; "IOLI Crackme Level 0x04." @ 0x804865e
+|          0x0804852f    e860feffff     call sym.imp.printf            ;sym.imp.printf()
+
+Looking at this we can learn here how the compiler passes arguments to 
+the functions. What it does is to store the direction of memory 
+(0x804865e) of the string "IOLI Crackme Level 0x04." in the end of its 
+stack frame. When the program goes inside printf the stack will look 
+like this:
+
+
+        ----------------  higher memory directions
+        '               '
+        '               '
+        '    Main's     '
+        '  Stack Frame  '
+        '               '
+        '               '
+        '---------------'
+        '   08          '
+        '---------------'
+        '   04          '
+        '---------------'
+        '   86          '
+        '---------------'
+ebp --> '   5e          ' little endian
+        '---------------'
+        '               '
+        '               '
+        '    Printf's   '
+        '  Stack Frame  '
+        '               '
+        '               '
+esp --> '               '
+        '---------------' lower memory directions
+
+So, printf, in order to access its parameter should use the EBP 
+register. If it were more than one parameter it would work in the same 
+fashion, the parameters would be one aside the other and printf would 
+access them using EBP + offset. For example, if above the 0x0x804865e 
+were another argument, it could reference it with EBP + 4.
+
+After the two printf we can see how the program reads input from the 
+stdin, calling scanf:
+
+|          0x08048540    8d4588         lea eax, [ebp-local_30]
+|          0x08048543    89442404       mov dword [esp + 4], eax
+|          0x08048547    c70424828604.  mov dword [esp], 0x8048682     ; [0x8048682:4]=0x7325  ; "%s" @ 0x8048682
+|          0x0804854e    e821feffff     call sym.imp.scanf             ;sym.imp.scanf()
+
+It passes two arguments to scanf, first the direction of memory inside 
+the stack where the pointer that will point to the string lives 
+[ebp-local_30], as a second argument we can see the format ("%s") of 
+how scanf() must treat the input.
+
+Now, the program pass our string to a function called check...shall 
+we take a look inside?
+
+|          0x08048553    8d4588         lea eax, [ebp-local_30]
+|          0x08048556    890424         mov dword [esp], eax
+|          0x08048559    e826ffffff     call sym.check                 ;sym.check()
+
+
+[0x080483d0]> pdf@sym.check
+/ (fcn) sym.check 133
+|          ; arg int arg_2        @ ebp+0x8
+|          ; arg int arg_3_3      @ ebp+0xf
+|          ; arg int arg_4_3      @ ebp+0x13
+|          ; var int local_0_1    @ ebp-0x1
+|          ; var int local_1      @ ebp-0x4
+|          ; var int local_2      @ ebp-0x8
+|          ; var int local_3      @ ebp-0xc
+|          ; var int local_3_1    @ ebp-0xd
+|          ; CALL XREF from 0x08048559 (sym.main)
+|          0x08048484    55             push ebp
+|          0x08048485    89e5           mov ebp, esp
+|          0x08048487    83ec28         sub esp, 0x28
+|          0x0804848a    c745f8000000.  mov dword [ebp-local_2], 0
+|          0x08048491    c745f4000000.  mov dword [ebp-local_3], 0
+|          ; JMP XREF from 0x080484f9 (sym.check)
+|    .---> 0x08048498    8b4508         mov eax, dword [ebp+arg_2]     ; [0x8:4]=0
+|    |     0x0804849b    890424         mov dword [esp], eax
+|    |     0x0804849e    e8e1feffff     call sym.imp.strlen            ;sym.imp.strlen()
+|    |     0x080484a3    3945f4         cmp dword [ebp-local_3], eax   ; [0x13:4]=256
+|    | ,=< 0x080484a6    7353           jae 0x80484fb                 
+|    | |   0x080484a8    8b45f4         mov eax, dword [ebp-local_3]
+|    | |   0x080484ab    034508         add eax, dword [ebp+arg_2]
+|    | |   0x080484ae    0fb600         movzx eax, byte [eax]
+|    | |   0x080484b1    8845f3         mov byte [ebp-local_3_1], al
+|    | |   0x080484b4    8d45fc         lea eax, [ebp-local_1]
+|    | |   0x080484b7    89442408       mov dword [esp + 8], eax
+|    | |   0x080484bb    c74424043886.  mov dword [esp + 4], 0x8048638 ; [0x8048638:4]=0x50006425  ; "%d" @ 0x8048638
+|    | |   0x080484c3    8d45f3         lea eax, [ebp-local_3_1]
+|    | |   0x080484c6    890424         mov dword [esp], eax
+|    | |   0x080484c9    e8d6feffff     call sym.imp.sscanf            ;sym.imp.sscanf()
+|    | |   0x080484ce    8b55fc         mov edx, dword [ebp-local_1]
+|    | |   0x080484d1    8d45f8         lea eax, [ebp-local_2]
+|    | |   0x080484d4    0110           add dword [eax], edx
+|    | |   0x080484d6    837df80f       cmp dword [ebp-local_2], 0xf   ; [0xf:4]=0x3000200 
+|    |,==< 0x080484da    7518           jne 0x80484f4                 
+|    |||   0x080484dc    c704243b8604.  mov dword [esp], str.Password_OK__n ; [0x804863b:4]=0x73736150  LEA str.Password_OK__n ; "Password OK!." @ 0x804863b
+|    |||   0x080484e3    e8acfeffff     call sym.imp.printf            ;sym.imp.printf()
+|    |||   0x080484e8    c70424000000.  mov dword [esp], 0
+|    |||   0x080484ef    e8c0feffff     call sym.imp.exit              ;sym.imp.exit()
+|    ||    ; JMP XREF from 0x080484da (sym.check)
+|    |`--> 0x080484f4    8d45f4         lea eax, [ebp-local_3]
+|    | |   0x080484f7    ff00           inc dword [eax]
+|    `===< 0x080484f9    eb9d           jmp 0x8048498                 
+|      |   ; JMP XREF from 0x080484a6 (sym.check)
+|      `-> 0x080484fb    c70424498604.  mov dword [esp], str.Password_Incorrect__n ; [0x8048649:4]=0x73736150  LEA str.Password_Incorrect__n ; "Password Incorrect!." @ 0x8048649
+|          0x08048502    e88dfeffff     call sym.imp.printf            ;sym.imp.printf()
+|          0x08048507    c9             leave
+\          0x08048508    c3             ret
+
+The first thing that stands out is the next printf:
+
+|    |||   0x080484dc    c704243b8604.  mov dword [esp], str.Password_OK__n ; [0x804863b:4]=0x73736150  LEA str.Password_OK__n ; "Password OK!." @ 0x804863b
+|    |||   0x080484e3    e8acfeffff     call sym.imp.printf            ;sym.imp.printf()
+
+If we look at the code, in order to get here we must pass this compare 
+instrucction:
+
+|    | |   0x080484d6    837df80f       cmp dword [ebp-local_2], 0xf   ; [0xf:4]=0x3000200 
+|    |,==< 0x080484da    7518           jne 0x80484f4                 
+|    |||   0x080484dc    c704243b8604.  mov dword [esp], str.Password_OK__n ; [0x804863b:4]=0x73736150  LEA str.Password_OK__n ; "Password OK!." @ 0x804863b
+|    |||   0x080484e3    e8acfeffff     call sym.imp.printf
+
+So, whatever it is [ebp-local_2] it must be equal to 0xf at some point 
+in order to solve the crackme.
+
+Now, getting back to the beginning we will look thoroughly at what the 
+program really does.
+
+First, it stores two 0 in [ebp-local_2] and [ebp-local_3]. At this 
+point we don't know what this means but usually when a variable starts 
+at a 0 is to count something.
+
+|          0x0804848a    c745f8000000.  mov dword [ebp-local_2], 0
+|          0x08048491    c745f4000000.  mov dword [ebp-local_3], 0
+
+Next, the program wants to know the lenght of our string:
+
+|    .---> 0x08048498    8b4508         mov eax, dword [ebp+arg_2]     ; [0x8:4]=0
+|    |     0x0804849b    890424         mov dword [esp], eax
+|    |     0x0804849e    e8e1feffff     call sym.imp.strlen            ;sym.imp.strlen()
+
+Now the program compares the lenght with 0 (notice that strlen returns 
+its value inside EAX)
+
+|    |     0x080484a3    3945f4         cmp dword [ebp-local_3], eax   ; [0x13:4]=256
+
+
+Remember that [ebp-local_3] = 0 so, what happens if [ebp-local_3] >= 
+len(our_string)
+
+|    | ,=< 0x080484a6    7353           jae 0x80484fb
+
+The program jumps, where?
+
+|      `-> 0x080484fb    c70424498604.  mov dword [esp], str.Password_Incorrect__n ; [0x8048649:4]=0x73736150  LEA str.Password_Incorrect__n ; "Password Incorrect!." @ 0x8048649
+|          0x08048502    e88dfeffff     call sym.imp.printf            ;sym.imp.printf()
+
+So if [ebp-local_3] > len(our_string) we are doomed. If we look through 
+the code looking for [ebp-local_3] we see this:
+
+|    |`--> 0x080484f4    8d45f4         lea eax, [ebp-local_3]
+|    | |   0x080484f7    ff00           inc dword [eax]
+|    `===< 0x080484f9    eb9d           jmp 0x8048498
+
+The value inside [ebp-local_3] is incremented by one and then the program 
+jumps back to where it compares [ebp-local_3] with len(our_string) so 
+at this points it seems the program does something like this:
+
+while [ebp-local_3] <= len(our_string) {
+    
+    if [ebp-local_2] == 0xf {
+        print("Password OK")
+        exit
+    }
+
+    ebp-local_3++
+}
+
+It appears that the key is to know what happens with [ebp-local_2].
+
+
+Before the if [ebp-local_2] == 0xf the program does
+
+|    | |   0x080484a8    8b45f4         mov eax, dword [ebp-local_3]
+|    | |   0x080484ab    034508         add eax, dword [ebp+arg_2]
+|    | |   0x080484ae    0fb600         movzx eax, byte [eax]
+|    | |   0x080484b1    8845f3         mov byte [ebp-local_3_1], al
+|    | |   0x080484b4    8d45fc         lea eax, [ebp-local_1]
+|    | |   0x080484b7    89442408       mov dword [esp + 8], eax
+|    | |   0x080484bb    c74424043886.  mov dword [esp + 4], 0x8048638 ; [0x8048638:4]=0x50006425  ; "%d" @ 0x8048638
+|    | |   0x080484c3    8d45f3         lea eax, [ebp-local_3_1]
+|    | |   0x080484c6    890424         mov dword [esp], eax
+|    | |   0x080484c9    e8d6feffff     call sym.imp.sscanf            ;sym.imp.sscanf()
+|    | |   0x080484ce    8b55fc         mov edx, dword [ebp-local_1]
+|    | |   0x080484d1    8d45f8         lea eax, [ebp-local_2]
+|    | |   0x080484d4    0110           add dword [eax], edx
+
+
+We know that the function check gets as a argument a pointer to our 
+string. This pointer lives in [ebp+arg2] so what it is really doing in 
+these two first instructions 
+
+|    | |   0x080484a8    8b45f4         mov eax, dword [ebp-local_3]
+|    | |   0x080484ab    034508         add eax, dword [ebp+arg_2]
+
+It is adding the value of [ebp-local_3] to the pointer. We already saw 
+like [ebp_local_3] is increased by one each time until it is >= 
+len(our_string) so this appears to be a way of going through the string 
+using pointer arithmetic.
+
+The next two instructions take a byte from our string at pointer + 
+[ebp-local_3]
+
+|    | |   0x080484ae    0fb600         movzx eax, byte [eax]
+|    | |   0x080484b1    8845f3         mov byte [ebp-local_3_1], al
+
+We see how the programs calls sscanf passing it our one byte 
+string, the format "%d" and a pointer. So what does sscanf? it parsers 
+whatever you feed it until it finds the null byte trying to read a 
+value compatible with a format (in this case "%d"). In this case what 
+it really does is read a number ("%d") from our one byte string. 
+
+|    | |   0x080484b4    8d45fc         lea eax, [ebp-local_1]
+|    | |   0x080484b7    89442408       mov dword [esp + 8], eax
+|    | |   0x080484bb    c74424043886.  mov dword [esp + 4], 0x8048638 ; [0x8048638:4]=0x50006425  ; "%d" @ 0x8048638
+|    | |   0x080484c3    8d45f3         lea eax, [ebp-local_3_1]
+|    | |   0x080484c6    890424         mov dword [esp], eax
+|    | |   0x080484c9    e8d6feffff     call sym.imp.sscanf            ;sym.imp.sscanf()
+
+Now, it adds that number and accumulate it in [ebp-local_2], so that's 
+what happens with [ebp-local_2].
+
+|    | |   0x080484ce    8b55fc         mov edx, dword [ebp-local_1]
+|    | |   0x080484d1    8d45f8         lea eax, [ebp-local_2]
+|    | |   0x080484d4    0110           add dword [eax], edx
+
+At this point we have a pretty good idea of what the program does
+
+ebp-local_3 = 0;
+ebp_local_2 = 0;
+while [ebp-local_3] <= len(our_string) {
+    
+    ebp_local_2 += int(our_string[ebp-local_3])
+    
+    if [ebp-local_2] == 0xf {
+        print("Password OK")
+        exit
+    }
+
+    ebp-local_3++
+}
+
+It's time to check
+
+./crackme0x04
+IOLI Crackme Level 0x04
+Password: 111111111111111
+Password OK!
+
+./crackme0x04
+IOLI Crackme Level 0x04
+Password: 5551
+Password OK!
+
+./crackme0x04
+IOLI Crackme Level 0x04
+Password: 333331
+Password OK!
