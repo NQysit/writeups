@@ -1,0 +1,227 @@
+
+Let's solve some reversing CTFs from Kernel2015
+
+Serial
+
+Hint: ¿Do you know how to sum numbers? This octopus needs a serial number.
+
+This is what happens when we execute it.
+
+marcos@marcos ~/Reversing/kernel2015 $ ./serial 
+ ----------- [./serial] ----------- 
+ :: Uso: ./serial <serial>
+
+marcos@marcos ~/Reversing/kernel2015 $ ./serial dkjasldaslkdsalkdas
+Comprobando serial: dkjasldaslkdsalkdas
+El serial key no parece correcto
+- Checksum enviado: 0x7cf
+- Checksum serial: 0x984
+
+It seems like in order to pass this level, sent checksum (0x7cf) must 
+be equal to serial checksum (0x984). It's reasonable to think that the 
+value 0x7cf comes from summing up the ascii codes from the command line 
+string.
+
+marcos@marcos ~/Reversing/kernel2015 $ python
+Python 2.7.6 (default, Jun 22 2015, 17:58:13) 
+[GCC 4.8.2] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> hex(sum(ord(c) for c in 'dkjasldaslkdsalkdas'))
+'0x7cf'
+
+Now, we will take a look inside the binary with radare2.
+
+marcos@marcos ~/Reversing/kernel2015 $ r2 serial 
+ -- Rename a function using the 'afr <newname> @ <offset>' command.
+[0x004006c0]> aaa
+[0x004006c0]> pdf@main
+/ (fcn) sym.main 64
+|           ; arg int arg_0_2      @ rbp+0x2
+|           ; var int local_0_1    @ rbp-0x1
+|           ; var int local_2      @ rbp-0x10
+|           ; DATA XREF from 0x004006dd (sym.main)
+|           ;-- main:
+|           0x004009c5    55             push rbp
+|           0x004009c6    4889e5         mov rbp, rsp
+|           0x004009c9    4883ec10       sub rsp, 0x10
+|           0x004009cd    897dfc         mov dword [rbp - 4], edi
+|           0x004009d0    488975f0       mov qword [rbp-local_2], rsi
+|           0x004009d4    837dfc02       cmp dword [rbp - 4], 2        ; [0x2:4]=0x102464c 
+|       ,=< 0x004009d8    7416           je 0x4009f0                  
+|       |   0x004009da    488b45f0       mov rax, qword [rbp-local_2]
+|       |   0x004009de    488b00         mov rax, qword [rax]
+|       |   0x004009e1    4889c7         mov rdi, rax
+|       |   0x004009e4    e81c000000     call sym.imprime_titulo       ;sym.imprime_titulo()
+|       |   0x004009e9    b8ffffffff     mov eax, 0xffffffff           ; -1 ; -1
+|      ,==< 0x004009ee    eb13           jmp 0x400a03                 
+|      ||   ; JMP XREF from 0x004009d8 (sym.main)
+|      |`-> 0x004009f0    488b45f0       mov rax, qword [rbp-local_2]
+|      |    0x004009f4    4883c008       add rax, 8
+|      |    0x004009f8    488b00         mov rax, qword [rax]
+|      |    0x004009fb    4889c7         mov rdi, rax
+|      |    0x004009fe    e830ffffff     call sym.__comprueba_serial   ;sym.__comprueba_serial()
+|      |    ; JMP XREF from 0x004009ee (sym.main)
+|      `--> 0x00400a03    c9             leave
+\           0x00400a04    c3             ret
+
+Not much to see, it checks if it is getting one command line argument (plus the name of the program) and
+then calls sym.__comprueba_serial().
+
+[0x004006c0]> pdf@sym.__comprueba_serial
+/ (fcn) sym.__comprueba_serial 146
+|           ; var int local_0_1    @ rbp-0x1
+|           ; var int local_1      @ rbp-0x8
+|           ; CALL XREF from 0x004009fe (sym.__comprueba_serial)
+|           0x00400933    55             push rbp
+|           0x00400934    4889e5         mov rbp, rsp
+|           0x00400937    4883ec10       sub rsp, 0x10
+|           0x0040093b    48897df8       mov qword [rbp-local_1], rdi
+|           0x0040093f    488b45f8       mov rax, qword [rbp-local_1]
+|           0x00400943    4889c6         mov rsi, rax
+|           0x00400946    bff50a4000     mov edi, str.Comprobando_serial:__s_n ; "Comprobando serial: %s." @ 0x400af5
+|           0x0040094b    b800000000     mov eax, 0
+|           0x00400950    e8ebfcffff     call sym.imp.printf           ;sym.imp.printf()
+|           0x00400955    bf40420f00     mov edi, 0xf4240
+|           0x0040095a    b800000000     mov eax, 0
+|           0x0040095f    e81cfdffff     call sym.imp.usleep           ;sym.imp.usleep()
+|           0x00400964    488b45f8       mov rax, qword [rbp-local_1]
+|           0x00400968    4889c7         mov rdi, rax
+|           0x0040096b    e822ffffff     call sym.comprueba_longitud   ;sym.comprueba_longitud()
+|           0x00400970    85c0           test eax, eax
+|       ,=< 0x00400972    742d           je 0x4009a1                  
+|       |   0x00400974    488b45f8       mov rax, qword [rbp-local_1]
+|       |   0x00400978    4889c7         mov rdi, rax
+|       |   0x0040097b    e876ffffff     call sym.checksum             ;sym.checksum()
+|       |   0x00400980    85c0           test eax, eax
+|      ,==< 0x00400982    741d           je 0x4009a1                  
+|      ||   0x00400984    488b45f8       mov rax, qword [rbp-local_1]
+|      ||   0x00400988    4889c6         mov rsi, rax
+|      ||   0x0040098b    bf100b4000     mov edi, str.Correcto__Para_obtener_tu_flag__visita:_https:__ctf.allyouneedisblog.com_crcheck.php_c__s_n ; "Correcto! Para obtener tu flag, visita: https://ctf.allyouneedisblog.com/crcheck.php?c=%s." @ 0x400b10
+|      ||   0x00400990    b800000000     mov eax, 0
+|      ||   0x00400995    e8a6fcffff     call sym.imp.printf           ;sym.imp.printf()
+|      ||   0x0040099a    b801000000     mov eax, 1
+|     ,===< 0x0040099f    eb22           jmp 0x4009c3                 
+|     |||   ; JMP XREF from 0x00400972 (sym.__comprueba_serial)
+|     |||   ; JMP XREF from 0x00400982 (sym.__comprueba_serial)
+|     |``-> 0x004009a1    488b45f8       mov rax, qword [rbp-local_1]
+|     |     0x004009a5    4889c7         mov rdi, rax
+|     |     0x004009a8    e816ffffff     call sym.print_checksum       ;sym.print_checksum()
+|     |     0x004009ad    89c6           mov esi, eax
+|     |     0x004009af    bf700b4000     mov edi, str.El_serial_key_no_parece_correcto_n__Checksum_enviado:_0x_03x_n__Checksum_serial:_0x984_n ; "El serial key no parece correcto.- Checksum enviado: 0x%03x.- Checksum serial: 0x984." @ 0x400b70
+|     |     0x004009b4    b800000000     mov eax, 0
+|     |     0x004009b9    e882fcffff     call sym.imp.printf           ;sym.imp.printf()
+|     |     0x004009be    b800000000     mov eax, 0
+|     |     ; JMP XREF from 0x0040099f (sym.__comprueba_serial)
+|     `---> 0x004009c3    c9             leave
+\       |   0x004009c4    c3             ret
+[0x004006c0]>
+
+
+There is a call to sym.comprueba_longitud() 
+
+|           0x0040096b    e822ffffff     call sym.comprueba_longitud   ;sym.comprueba_longitud()
+|           0x00400970    85c0           test eax, eax
+|       ,=< 0x00400972    742d           je 0x4009a1
+
+If that function returns 0 inside the eax register the programs jumps to 0x4009a1
+
+|       ,=< 0x00400972    742d           je 0x4009a1
+
+Just ahead 0x4009a1 we see how the program prints that the serial is 
+not correct, so we need to know what happens inside 
+sym.comprueba_longitud().
+
+[0x004006c0]> pdf@sym.comprueba_longitud
+/ (fcn) sym.comprueba_longitud 49
+|           ; arg int arg_4        @ rbp+0x20
+|           ; var int local_0_1    @ rbp-0x1
+|           ; var int local_3      @ rbp-0x18
+|           ; CALL XREF from 0x0040096b (sym.comprueba_longitud)
+|           0x00400892    55             push rbp
+|           0x00400893    4889e5         mov rbp, rsp
+|           0x00400896    48897de8       mov qword [rbp-local_3], rdi
+|           0x0040089a    c745fc000000.  mov dword [rbp - 4], 0
+|       ,=< 0x004008a1    eb09           jmp 0x4008ac                 
+|           ; JMP XREF from 0x004008b5 (sym.comprueba_longitud)
+|      .--> 0x004008a3    488345e801     add qword [rbp-local_3], 1
+|      ||   0x004008a8    8345fc01       add dword [rbp - 4], 1
+|      ||   ; JMP XREF from 0x004008a1 (sym.comprueba_longitud)
+|      |`-> 0x004008ac    488b45e8       mov rax, qword [rbp-local_3]
+|      |    0x004008b0    0fb600         movzx eax, byte [rax]
+|      |    0x004008b3    84c0           test al, al
+|      `==< 0x004008b5    75ec           jne 0x4008a3                 
+|           0x004008b7    837dfc20       cmp dword [rbp - 4], 0x20     ; [0x20:4]=64 ; "@" 0x00000020 
+|           0x004008bb    0f94c0         sete al
+|           0x004008be    0fb6c0         movzx eax, al
+|           0x004008c1    5d             pop rbp
+\           0x004008c2    c3             ret
+
+This functions gets a pointer that points to our string in rdi and it 
+saves the pointer in the stack [rbp-local3].
+
+|           0x00400896    48897de8       mov qword [rbp-local_3], rdi
+
+Then makes an unconditional jump and takes the first byte from our string.
+
+|      |`-> 0x004008ac    488b45e8       mov rax, qword [rbp-local_3]
+|      |    0x004008b0    0fb600         movzx eax, byte [rax]
+
+and tests if that byte is 0, if not, the program jumps back, but if it 
+is 0 it compares the value in [rbp - 4] with 0x20
+
+|      |    0x004008b3    84c0           test al, al
+|      `==< 0x004008b5    75ec           jne 0x4008a3 
+|           0x004008b7    837dfc20       cmp dword [rbp - 4], 0x20     ; [0x20:4]=64 ; "@" 0x00000020
+
+Each time it jumps back the program adds 1 to [rbp - 4] (initially [rbp 
+- 4] contains a 0) and to [rbp - local_3].
+
+Remember that [rbp - local3] is a pointer, so each time it adds one to 
+it the pointer moves to the next memory position.
+
+The process is repeated until there is a 0 in [rbp-local3], so 
+basically it is counting how many characters the string has and then 
+comparing the lenght of the string with 0x20.
+
+So, we know that the input must be a 0x20 (32) lenght string and its 
+sum must be 0x984.
+
+32 is the lenght of md4 and md5 has functions, so lets try to hash the 
+binary:
+
+marcos@marcos ~/Reversing/kernel2015 $ rahash2 -a md5,md4 serial 
+serial: 0x00000000-0x00002615 md5: 42a81e98db85690fae17d88056b84c19
+serial: 0x00000000-0x00002615 md4: f2fcc9db1b147197d1d2b94dd46e05e6
+
+marcos@marcos ~/Reversing/kernel2015 $ ./serial 42a81e98db85690fae17d88056b84c19
+Comprobando serial: 42a81e98db85690fae17d88056b84c19
+El serial key no parece correcto
+- Checksum enviado: 0x876
+- Checksum serial: 0x984
+
+marcos@marcos ~/Reversing/kernel2015 $ ./serial f2fcc9db1b147197d1d2b94dd46e05e6
+Comprobando serial: f2fcc9db1b147197d1d2b94dd46e05e6
+El serial key no parece correcto
+- Checksum enviado: 0x924
+- Checksum serial: 0x984
+
+Neither of them work but 0x924 is pretty close to 0x984.
+
+0x984 - 0x924 = 96
+
+We take one character from the md4, like 2
+
+2 --> ascii code 50
+
+50 + 96 / 2 --> 98 ('b')
+
+So if we replace two '2' in the md4 for b the sum must be 0x984
+
+marcos@marcos ~/Reversing/kernel2015 $ ./serial fbfcc9db1b147197d1dbb94dd46e05e6
+Comprobando serial: fbfcc9db1b147197d1dbb94dd46e05e6
+Correcto! Para obtener tu flag, visita: https://ctf.allyouneedisblog.com/crcheck.php?c=fbfcc9db1b147197d1dbb94dd46e05e6
+
+it worked!
+
+  
+
