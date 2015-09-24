@@ -1,9 +1,276 @@
 
 Let's solve some reversing CTFs from Kernel2015
 
-Serial
+Reversing 0x3
 
-Hint: ¿Do you know how to sum numbers? This octopus needs a serial number.
+marcos@marcos ~/Reversing/kernel2015 $ ./ch_01 dsdasdas
+No es la clave correcta, pulpeiro :(
+
+We need to guess the right key in order to solve this level. Let's look
+into the binary.
+
+marcos@marcos ~/Reversing/kernel2015 $ r2 ch_01 
+ -- Switch between print modes using the 'p' and 'P' keys in visual mode
+[0x00400710]> aaa
+[0x00400710]> pdf@main 
+/ (fcn) sym.main 142
+|           ; arg int arg_0_2      @ rbp+0x2
+|           ; var int local_0_1    @ rbp-0x1
+|           ; var int local_2      @ rbp-0x10
+|           ; DATA XREF from 0x0040072d (sym.main)
+|           ;-- main:
+|           0x004008e2    55             push rbp
+|           0x004008e3    4889e5         mov rbp, rsp
+|           0x004008e6    4883ec10       sub rsp, 0x10
+|           0x004008ea    897dfc         mov dword [rbp - 4], edi
+|           0x004008ed    488975f0       mov qword [rbp-local_2], rsi
+|           0x004008f1    837dfc02       cmp dword [rbp - 4], 2        ; [0x2:4]=0x102464c 
+|       ,=< 0x004008f5    7416           je 0x40090d                  
+|       |   0x004008f7    488b45f0       mov rax, qword [rbp-local_2]
+|       |   0x004008fb    488b00         mov rax, qword [rax]
+|       |   0x004008fe    4889c7         mov rdi, rax
+|       |   0x00400901    e833010000     call sym.__imprime_titulo     ;sym.__imprime_titulo()
+|       |   0x00400906    b8ffffffff     mov eax, 0xffffffff           ; -1 ; -1
+|      ,==< 0x0040090b    eb61           jmp 0x40096e                 
+|      ||   ; JMP XREF from 0x004008f5 (sym.main)
+|      |`-> 0x0040090d    488b45f0       mov rax, qword [rbp-local_2]
+|      |    0x00400911    4883c008       add rax, 8
+|      |    0x00400915    488b00         mov rax, qword [rax]
+|      |    0x00400918    4889c7         mov rdi, rax
+|      |    0x0040091b    e850000000     call sym.__comprueba_pwd      ;sym.__comprueba_pwd()
+|      |    0x00400920    85c0           test eax, eax
+|     ,===< 0x00400922    743b           je 0x40095f                  
+|     ||    0x00400924    488b45f0       mov rax, qword [rbp-local_2]
+|     ||    0x00400928    4883c008       add rax, 8
+|     ||    0x0040092c    488b00         mov rax, qword [rax]
+|     ||    0x0040092f    be380b4000     mov esi, str.f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4 ; "f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4" @ 0x400b38
+|     ||    0x00400934    4889c7         mov rdi, rax
+|     ||    0x00400937    e875000000     call sym.__obf                ;sym.__obf()
+|     ||    0x0040093c    bea0126000     mov esi, obj.buffer           ; " (Debian 4.4.7-2) 4.4.7" @ 0x6012a0
+|     ||    0x00400941    4889c7         mov rdi, rax
+|     ||    0x00400944    e8d3feffff     call sym.__fl4g               ;sym.__fl4g()
+|     ||    0x00400949    bea0126000     mov esi, obj.buffer           ; " (Debian 4.4.7-2) 4.4.7" @ 0x6012a0
+|     ||    0x0040094e    bf6a0b4000     mov edi, str.Correcto__flag:__s_n ; "Correcto! flag: %s." @ 0x400b6a
+|     ||    0x00400953    b800000000     mov eax, 0
+|     ||    0x00400958    e823fdffff     call sym.imp.printf           ;sym.imp.printf()
+|    ,====< 0x0040095d    eb0a           jmp 0x400969                 
+|    ||     ; JMP XREF from 0x00400922 (sym.main)
+|    |`---> 0x0040095f    bf800b4000     mov edi, str.No_es_la_clave_correcta__pulpeiro_:_ ; "No es la clave correcta, pulpeiro :(" @ 0x400b80
+|    | |    0x00400964    e827fdffff     call sym.imp.puts             ;sym.imp.puts()
+|    |      ; JMP XREF from 0x0040095d (sym.main)
+|    `----> 0x00400969    b800000000     mov eax, 0
+|      |    ; JMP XREF from 0x0040090b (sym.main)
+|      `--> 0x0040096e    c9             leave
+\           0x0040096f    c3             ret
+
+The program calls comprueba_pwd with a pointer
+toward our key as an argument. When comprueba_pwd returns, the program
+checks its value to see if the key is correct or not.
+
+|      |`-> 0x0040090d    488b45f0       mov rax, qword [rbp-local_2]
+|      |    0x00400911    4883c008       add rax, 8
+|      |    0x00400915    488b00         mov rax, qword [rax]
+|      |    0x00400918    4889c7         mov rdi, rax
+|      |    0x0040091b    e850000000     call sym.__comprueba_pwd      ;sym.__comprueba_pwd()
+|      |    0x00400920    85c0           test eax, eax
+|     ,===< 0x00400922    743b           je 0x40095f
+
+
+[0x00400810]> pdf@sym.__comprueba_pwd
+/ (fcn) sym.__comprueba_pwd 65
+|           ; var int local_0_1    @ rbp-0x1
+|           ; var int local_1      @ rbp-0x8
+|           ; CALL XREF from 0x0040091b (sym.__comprueba_pwd)
+|           0x00400970    55             push rbp
+|           0x00400971    4889e5         mov rbp, rsp
+|           0x00400974    4883ec10       sub rsp, 0x10
+|           0x00400978    48897df8       mov qword [rbp-local_1], rdi
+|           0x0040097c    488b45f8       mov rax, qword [rbp-local_1]
+|           0x00400980    be380b4000     mov esi, str.f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4 ; "f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4" @ 0x400b38
+|           0x00400985    4889c7         mov rdi, rax
+|           0x00400988    e824000000     call sym.__obf                ;sym.__obf()
+|           0x0040098d    ba0c000000     mov edx, 0xc
+|           0x00400992    4889c6         mov rsi, rax
+|           0x00400995    bfa50b4000     mov edi, 0x400ba5
+|           0x0040099a    e801fdffff     call sym.imp.strncmp          ;sym.imp.strncmp()
+|           0x0040099f    85c0           test eax, eax
+|       ,=< 0x004009a1    7507           jne 0x4009aa                 
+|       |   0x004009a3    b801000000     mov eax, 1
+|       |   0x004009a8    eb05           jmp 0x4009af                 
+|       |   ; JMP XREF from 0x004009a1 (sym.__comprueba_pwd)
+|       `-> 0x004009aa    b800000000     mov eax, 0
+|           ; JMP XREF from 0x004009a8 (sym.__comprueba_pwd)
+|           0x004009af    c9             leave
+\           0x004009b0    c3             ret
+
+There's a call to __obf with our command line argument and this 
+weird string: f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4  
+
+Then the program makes a comparison calling to strncmp, strncmp gets 3 
+arguments, one is the number of bytes to compare, in this case 0xc 
+and the other two are string pointers.
+
+|           0x0040098d    ba0c000000     mov edx, 0xc
+|           0x00400992    4889c6         mov rsi, rax
+|           0x00400995    bfa50b4000     mov edi, 0x400ba5
+|           0x0040099a    e801fdffff     call sym.imp.strncmp          ;sym.imp.strncmp()
+
+So it appears whatever __obf returns must be equal to what it is inside
+0x400ba5.
+
+Leet's see what we find in __obf.
+
+[0x00400810]> pdf@sym.__obf
+/ (fcn) sym.__obf 136
+|           ; var int local_0_1    @ rbp-0x1
+|           ; var int local_2_4    @ rbp-0x14
+|           ; var int local_5      @ rbp-0x28
+|           ; var int local_6      @ rbp-0x30
+|           ; CALL XREF from 0x00400937 (sym.__obf)
+|           ; CALL XREF from 0x00400988 (sym.__obf)
+|           0x004009b1    55             push rbp
+|           0x004009b2    4889e5         mov rbp, rsp
+|           0x004009b5    53             push rbx
+|           0x004009b6    4883ec28       sub rsp, 0x28
+|           0x004009ba    48897dd8       mov qword [rbp-local_5], rdi
+|           0x004009be    488975d0       mov qword [rbp-local_6], rsi
+|           0x004009c2    c745ec000000.  mov dword [rbp-local_2_4], 0
+|       ,=< 0x004009c9    eb49           jmp 0x400a14                 
+|           ; JMP XREF from 0x00400a29 (sym.__obf)
+|     .---> 0x004009cb    8b45ec         mov eax, dword [rbp-local_2_4]
+|     | |   0x004009ce    4863d0         movsxd rdx, eax
+|     | |   0x004009d1    488b45d0       mov rax, qword [rbp-local_6]
+|     | |   0x004009d5    4801d0         add rax, rdx
+|     | |   0x004009d8    0fb600         movzx eax, byte [rax]
+|     | |   0x004009db    84c0           test al, al
+|     |,==< 0x004009dd    744e           je 0x400a2d                  
+|     |||   0x004009df    8b45ec         mov eax, dword [rbp-local_2_4]
+|     |||   0x004009e2    4863d0         movsxd rdx, eax
+|     |||   0x004009e5    488b45d8       mov rax, qword [rbp-local_5]
+|     |||   0x004009e9    4801c2         add rdx, rax
+|     |||   0x004009ec    8b45ec         mov eax, dword [rbp-local_2_4]
+|     |||   0x004009ef    4863c8         movsxd rcx, eax
+|     |||   0x004009f2    488b45d8       mov rax, qword [rbp-local_5]
+|     |||   0x004009f6    4801c8         add rax, rcx
+|     |||   0x004009f9    0fb608         movzx ecx, byte [rax]
+|     |||   0x004009fc    8b45ec         mov eax, dword [rbp-local_2_4]
+|     |||   0x004009ff    4863f0         movsxd rsi, eax
+|     |||   0x00400a02    488b45d0       mov rax, qword [rbp-local_6]
+|     |||   0x00400a06    4801f0         add rax, rsi
+|     |||   0x00400a09    0fb600         movzx eax, byte [rax]
+|     |||   0x00400a0c    31c8           xor eax, ecx
+|     |||   0x00400a0e    8802           mov byte [rdx], al
+|     |||   0x00400a10    8345ec01       add dword [rbp-local_2_4], 1
+|     |||   ; JMP XREF from 0x004009c9 (sym.__obf)
+|     ||`-> 0x00400a14    8b45ec         mov eax, dword [rbp-local_2_4]
+|     ||    0x00400a17    4863d8         movsxd rbx, eax
+|     ||    0x00400a1a    488b45d8       mov rax, qword [rbp-local_5]
+|     ||    0x00400a1e    4889c7         mov rdi, rax
+|     ||    0x00400a21    e89afcffff     call sym.imp.strlen           ;sym.imp.strlen()
+|     ||    0x00400a26    4839c3         cmp rbx, rax
+|     `===< 0x00400a29    72a0           jb 0x4009cb                  
+|    ,====< 0x00400a2b    eb01           jmp 0x400a2e                 
+|    | |    ; JMP XREF from 0x004009dd (sym.__obf)
+|    | `--> 0x00400a2d    90             nop
+|    |      ; JMP XREF from 0x00400a2b (sym.__obf)
+|    `----> 0x00400a2e    488b45d8       mov rax, qword [rbp-local_5]
+|           0x00400a32    4883c428       add rsp, 0x28
+|           0x00400a36    5b             pop rbx
+|           0x00400a37    5d             pop rbp
+\           0x00400a38    c3             ret
+[0x00400810]>
+
+First, notice that [rbp-local_2_4] starts as 0.
+
+|           0x004009c2    c745ec000000.  mov dword [rbp-local_2_4], 0
+
+At some point we see this:
+
+|     |||   0x00400a10    8345ec01       add dword [rbp-local_2_4], 1
+
+So [rbp-local_2_4] is bound to be an index.
+
+Now we see some pointer arithmetic.
+
+|     |||   0x004009df    8b45ec         mov eax, dword [rbp-local_2_4]
+|     |||   0x004009e2    4863d0         movsxd rdx, eax
+|     |||   0x004009e5    488b45d8       mov rax, qword [rbp-local_5]
+|     |||   0x004009e9    4801c2         add rdx, rax
+
+At this point rdx is a pointer toward some position in the string 
+that starts at [rbp-local_5]. rdx = [rbp-local_5] + [rbp-local_2_4]
+
+Here the program stores a byte from one of the strings in ecx.
+
+|     |||   0x004009ec    8b45ec         mov eax, dword [rbp-local_2_4]
+|     |||   0x004009ef    4863c8         movsxd rcx, eax
+|     |||   0x004009f2    488b45d8       mov rax, qword [rbp-local_5]
+|     |||   0x004009f6    4801c8         add rax, rcx
+|     |||   0x004009f9    0fb608         movzx ecx, byte [rax]
+
+Now it does the same but in the other string. It saves the byte in eax. 
+
+|     |||   0x004009fc    8b45ec         mov eax, dword [rbp-local_2_4]
+|     |||   0x004009ff    4863f0         movsxd rsi, eax
+|     |||   0x00400a02    488b45d0       mov rax, qword [rbp-local_6]
+|     |||   0x00400a06    4801f0         add rax, rsi
+|     |||   0x00400a09    0fb600         movzx eax, byte [rax]
+
+Now it performs a XOR between those bytes and stores the result back in
+[rdx].
+
+|     |||   0x00400a0c    31c8           xor eax, ecx
+|     |||   0x00400a0e    8802           mov byte [rdx], al
+
+So, it seems like the program performs a XOR between what we feed the 
+program with and f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4f4b4d4 and 
+the result must be equal to what it is stored at 0x400ba5 (0xc 
+characters, remember the call to strcmp).
+
+Leet's look what it is inside 0x400ba5 with gdb
+
+marcos@marcos ~/Reversing/kernel2015 $ gdb ./ch_01 
+
+(gdb) b * 0x0040099a
+Breakpoint 1 at 0x40099a
+
+(gdb) run aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Starting program: /home/marcos/Reversing/kernel2015/ch_01 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+Breakpoint 1, 0x000000000040099a in __comprueba_pwd ()
+
+(gdb) x/12xb 0x400ba5
+0x400ba5:	0x16	0x41	0x0e	0x44	0x0b	0x59	0x13	0x53
+0x400bad:	0x03	0x46	0x56	0x00
+
+our_key XOR f4b4d4 == 0x16, ..., 0x56, 0x00
+
+Thanks to the XOR properties we know that:
+
+0x16, ..., 0x56, 0x00 XOR f4b4d4 == our_key
+
+    [0x16, 0x41, 0x0e, 0x44, 0x0b, 0x59, 0x13, 0x53, 0x03, 0x46, 0x56, 0x00]
+XOR
+    [0x66, 0x34, 0x62, 0x34, 0x64, 0x34, 0x66, 0x34, 0x62, 0x34, 0x64, 0x34]
+-------------------------------------------------------------------------------
+    [0x70, 0x75, 0x6c, 0x70, 0x6f, 0x6d, 0x75, 0x67, 0x61, 0x72, 0x32, 0x34]
+
+0x70 -> p
+0x75 -> u
+0x6c -> l
+...
+...
+0x34 -> 4
+
+They key is pulpomugar24.
+
+marcos@marcos ~/Reversing/kernel2015 $ ./ch_01 pulpomugar24
+Correcto! flag: 7bc82722d4083cc5bb1c70975d4f6dfa7124a2bb7187d8faecf7d404ee681e63
+
+Reversing 0x4
+
+Hint: ¿Do you know how to sum numbers? This octopus needs a serial 
+number.
 
 This is what happens when we execute it.
 
@@ -17,10 +284,10 @@ El serial key no parece correcto
 - Checksum enviado: 0x7cf
 - Checksum serial: 0x984
 
-It seems like in order to pass this level, sent checksum (0x7cf) must 
-be equal to serial checksum (0x984). It's reasonable to think that the 
-value 0x7cf comes from summing up the ascii codes from the command line 
-string.
+It seems like in order to pass this level, sent checksum (in this 
+case 0x7cf) must be equal to 0x984. It's reasonable to think that 
+the value 0x7cf comes from summing up the ascii codes from the 
+command line string.
 
 marcos@marcos ~/Reversing/kernel2015 $ python
 Python 2.7.6 (default, Jun 22 2015, 17:58:13) 
@@ -64,8 +331,9 @@ marcos@marcos ~/Reversing/kernel2015 $ r2 serial
 |      `--> 0x00400a03    c9             leave
 \           0x00400a04    c3             ret
 
-Not much to see, it checks if it is getting one command line argument (plus the name of the program) and
-then calls sym.__comprueba_serial().
+Not much to see, it checks if it is getting one command line 
+argument (plus the name of the program) and then calls 
+sym.__comprueba_serial().
 
 [0x004006c0]> pdf@sym.__comprueba_serial
 / (fcn) sym.__comprueba_serial 146
@@ -123,13 +391,10 @@ There is a call to sym.comprueba_longitud()
 |           0x00400970    85c0           test eax, eax
 |       ,=< 0x00400972    742d           je 0x4009a1
 
-If that function returns 0 inside the eax register the programs jumps to 0x4009a1
-
-|       ,=< 0x00400972    742d           je 0x4009a1
-
-Just ahead 0x4009a1 we see how the program prints that the serial is 
-not correct, so we need to know what happens inside 
-sym.comprueba_longitud().
+If that function returns 0 inside the eax register the programs jumps 
+to 0x4009a1. Just ahead 0x4009a1 we see how the program prints that the 
+serial is not correct, so we need to know what happens inside 
+sym.comprueba_longitud() in order to get something different from 0.
 
 [0x004006c0]> pdf@sym.comprueba_longitud
 / (fcn) sym.comprueba_longitud 49
@@ -156,12 +421,13 @@ sym.comprueba_longitud().
 |           0x004008c1    5d             pop rbp
 \           0x004008c2    c3             ret
 
-This functions gets a pointer that points to our string in rdi and it 
+This functions gets a pointer toward our string in rdi and it 
 saves the pointer in the stack [rbp-local3].
 
 |           0x00400896    48897de8       mov qword [rbp-local_3], rdi
 
-Then makes an unconditional jump and takes the first byte from our string.
+Then makes an unconditional jump and takes the first byte from our 
+string.
 
 |      |`-> 0x004008ac    488b45e8       mov rax, qword [rbp-local_3]
 |      |    0x004008b0    0fb600         movzx eax, byte [rax]
@@ -181,12 +447,18 @@ it the pointer moves to the next memory position.
 
 The process is repeated until there is a 0 in [rbp-local3], so 
 basically it is counting how many characters the string has and then 
-comparing the lenght of the string with 0x20.
+comparing the length of the string with 0x20.
 
-So, we know that the input must be a 0x20 (32) lenght string and its 
+If the length is equal to 0x20, eax is set to 1
+
+|           0x004008b7    837dfc20       cmp dword [rbp - 4], 0x20     ; [0x20:4]=64 ; "@" 0x00000020 
+|           0x004008bb    0f94c0         sete al
+|           0x004008be    0fb6c0         movzx eax, al
+
+So, we know that the input must be a 0x20 (32) length string and its 
 sum must be 0x984.
 
-32 is the lenght of md4 and md5 has functions, so lets try to hash the 
+32 is the length of md4 and md5 has functions, so lets try to hash the 
 binary:
 
 marcos@marcos ~/Reversing/kernel2015 $ rahash2 -a md5,md4 serial 
