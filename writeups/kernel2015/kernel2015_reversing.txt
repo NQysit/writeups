@@ -1,6 +1,263 @@
 
 Let's solve some reversing CTFs from Kernel2015
 
+Reversing 0x1
+
+marcos@marcos ~/Reversing/kernel2015 $ ./ch_05
+ ----------- [./ch_05] ----------- 
+ :: Uso: ./ch_05 <password>
+
+We need the secret password! Let's see if it is inside the binary.
+
+marcos@marcos ~/Reversing/kernel2015 $ strings ch_05 
+/lib64/ld-linux-x86-64.so.2
+libcrypto.so.1.0.0
+_ITM_deregisterTMCloneTable
+__gmon_start__
+_Jv_RegisterClasses
+_ITM_registerTMCloneTable
+SHA256_Init
+SHA256_Update
+SHA256_Final
+libc.so.6
+sprintf
+strncmp
+puts
+strlen
+__libc_start_main
+OPENSSL_1.0.0
+GLIBC_2.2.5
+	u)H
+fffff.
+l$ L
+t$(L
+|$0H
+%02x
+Correcto! flag: %s
+Nooooooo...... :(
+pnyibpnoeba
+Jajajajajajja que n00b es el %s 
+Invalid state, 
+chycrvebf
+ ----------- [%s] ----------- 
+ :: Uso: %s <password>
+;*3$"
+GCC: (Debian 4.7.2-5) 4.7.2
+GCC: (Debian 4.4.7-2) 4.4.7
+.symtab
+.strtab
+.shstrtab
+.interp
+.note.ABI-tag
+.note.gnu.build-id
+.gnu.hash
+.dynsym
+.dynstr
+.gnu.version
+.gnu.version_r
+.rela.dyn
+.rela.plt
+.init
+.text
+.fini
+.rodata
+.eh_frame_hdr
+.eh_frame
+.init_array
+.fini_array
+.jcr
+.dynamic
+.got
+.got.plt
+.data
+.bss
+.comment
+call_gmon_start
+crtstuff.c
+__JCR_LIST__
+deregister_tm_clones
+register_tm_clones
+__do_global_dtors_aux
+completed.6092
+__do_global_dtors_aux_fini_array_entry
+frame_dummy
+__frame_dummy_init_array_entry
+challenge_05.c
+buffer
+__FRAME_END__
+__JCR_END__
+_GLOBAL_OFFSET_TABLE_
+__init_array_end
+__init_array_start
+_DYNAMIC
+data_start
+printf@@GLIBC_2.2.5
+__comprueba_pwd
+imprime_titulo
+__libc_csu_fini
+_start
+__rot18_char
+__gmon_start__
+_Jv_RegisterClasses
+puts@@GLIBC_2.2.5
+_fini
+strncmp@@GLIBC_2.2.5
+__libc_start_main@@GLIBC_2.2.5
+_ITM_deregisterTMCloneTable
+_IO_stdin_used
+__fl4g
+strlen@@GLIBC_2.2.5
+_ITM_registerTMCloneTable
+__data_start
+sprintf@@GLIBC_2.2.5
+__TMC_END__
+__dso_handle
+__libc_csu_init
+SHA256_Update@@OPENSSL_1.0.0
+__bss_start
+SHA256_Final@@OPENSSL_1.0.0
+_end
+SHA256_Init@@OPENSSL_1.0.0
+_edata
+main
+_init
+__rot18
+
+There are some weird looking strings...oh it says __rot18!
+
+marcos@marcos ~/Reversing/kernel2015 $ strings ch_05 | tr 'a-zA-Z' 'n-za-mN-ZA-M'
+/yvo64/yq-yvahk-k86-64.fb.2
+yvopelcgb.fb.1.0.0
+_VGZ_qrertvfgreGZPybarGnoyr
+__tzba_fgneg__
+_Wi_ErtvfgrePynffrf
+_VGZ_ertvfgreGZPybarGnoyr
+FUN256_Vavg
+FUN256_Hcqngr
+FUN256_Svany
+yvop.fb.6
+fcevags
+fgeapzc
+chgf
+fgeyra
+__yvop_fgneg_znva
+BCRAFFY_1.0.0
+TYVOP_2.2.5
+	h)U
+sssss.
+y$ Y
+g$(Y
+|$0U
+%02k
+Pbeerpgb! synt: %f
+Abbbbbbb...... :(
+calvocabron
+Wnwnwnwnwnwwn dhr a00o rf ry %f 
+Vainyvq fgngr, 
+pulpeiros
+ ----------- [%f] ----------- 
+ :: Hfb: %f <cnffjbeq>
+;*3$"
+TPP: (Qrovna 4.7.2-5) 4.7.2
+TPP: (Qrovna 4.4.7-2) 4.4.7
+.flzgno
+.fgegno
+.fufgegno
+.vagrec
+.abgr.NOV-gnt
+.abgr.tah.ohvyq-vq
+.tah.unfu
+.qlaflz
+.qlafge
+.tah.irefvba
+.tah.irefvba_e
+.eryn.qla
+.eryn.cyg
+.vavg
+.grkg
+.svav
+.ebqngn
+.ru_senzr_uqe
+.ru_senzr
+.vavg_neenl
+.svav_neenl
+.wpe
+.qlanzvp
+.tbg
+.tbg.cyg
+.qngn
+.off
+.pbzzrag
+pnyy_tzba_fgneg
+pegfghss.p
+__WPE_YVFG__
+qrertvfgre_gz_pybarf
+ertvfgre_gz_pybarf
+__qb_tybony_qgbef_nhk
+pbzcyrgrq.6092
+__qb_tybony_qgbef_nhk_svav_neenl_ragel
+senzr_qhzzl
+__senzr_qhzzl_vavg_neenl_ragel
+punyyratr_05.p
+ohssre
+__SENZR_RAQ__
+__WPE_RAQ__
+_TYBONY_BSSFRG_GNOYR_
+__vavg_neenl_raq
+__vavg_neenl_fgneg
+_QLANZVP
+qngn_fgneg
+cevags@@TYVOP_2.2.5
+__pbzcehron_cjq
+vzcevzr_gvghyb
+__yvop_pfh_svav
+_fgneg
+__ebg18_pune
+__tzba_fgneg__
+_Wi_ErtvfgrePynffrf
+chgf@@TYVOP_2.2.5
+_svav
+fgeapzc@@TYVOP_2.2.5
+__yvop_fgneg_znva@@TYVOP_2.2.5
+_VGZ_qrertvfgreGZPybarGnoyr
+_VB_fgqva_hfrq
+__sy4t
+fgeyra@@TYVOP_2.2.5
+_VGZ_ertvfgreGZPybarGnoyr
+__qngn_fgneg
+fcevags@@TYVOP_2.2.5
+__GZP_RAQ__
+__qfb_unaqyr
+__yvop_pfh_vavg
+FUN256_Hcqngr@@BCRAFFY_1.0.0
+__off_fgneg
+FUN256_Svany@@BCRAFFY_1.0.0
+_raq
+FUN256_Vavg@@BCRAFFY_1.0.0
+_rqngn
+znva
+_vavg
+__ebg18
+
+Now, we have two good loking strings.
+
+calvocabron
+pulpeiros
+
+Let's check.
+
+marcos@marcos ~/Reversing/kernel2015 $ ./ch_05 calvocabron
+Jajajajajajja que n00b es el calvocabron 
+Invalid state, Nooooooo...... :(
+
+Outch! As a bald man I feel bad about this...it must be the other 
+string then
+
+marcos@marcos ~/Reversing/kernel2015 $ ./ch_05 pulpeiros
+Correcto! flag: 0e47608838cfd2d4147b285b08cb530c30ac934ee6ed471af5035ada0747b0a2
+
+Yep!
+
 Reversing 0x2
 
 We need the password to pass this level.
@@ -165,10 +422,14 @@ Then, it makes something with the pointer to the buffer.
 |   || |    0x00400a99    488b45f8       mov rax, qword [rbp-local_1]
 |   || |    0x00400a9d    4801d0         add rax, rdx
 
-I want to use gdb to compare the value of rax after 
+I want to use gdb to compare the value of rax after...
+
 |   || |    0x00400a72    488b45f8       mov rax, qword [rbp-local_1]
-with its value after
+
+with its value after...
+
 |   || |    0x00400a9d    4801d0         add rax, rdx
+
 to get an idea of what it is happening here.
 
 The program has a protection against debuggers but we can beat it using
