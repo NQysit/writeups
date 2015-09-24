@@ -239,7 +239,7 @@ znva
 _vavg
 __ebg18
 
-Now, we have two good loking strings.
+Now, we have two good looking strings.
 
 calvocabron
 pulpeiros
