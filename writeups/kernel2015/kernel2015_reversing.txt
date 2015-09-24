@@ -407,7 +407,7 @@ It also checks that our string has 17 (0x11) characters.
 |    | |    0x00400a68    4883f811       cmp rax, 0x11
 |   ,=====< 0x00400a6c    0f85a3000000   jne 0x400b15
 
-Then, it makes something with the pointer to the buffer.
+Then, it makes something with the buffer's pointer.
 
 |   || |    0x00400a72    488b45f8       mov rax, qword [rbp-local_1]
 |   || |    0x00400a76    48c745d8ffff.  mov qword [rbp-local_5], -1
@@ -491,15 +491,24 @@ $2 = 0x602021
 (gdb) p $2 - $1
 $3 = 17
 
-So it seems that rax points to the end of our string (remember that
-the length is 17)
+So it seems that at the end of the next snippet rax points to the end of our string (remember that
+the length is 17).
 
- 
-|   || |    0x00400ab3    c6400a00       mov byte [rax + 0xa], 0
-|   || |    0x00400ab7    488b45f8       mov rax, qword [rbp-local_1]
-|   || |    0x00400abb    ba1b000000     mov edx, 0x1b
+|   || |    0x00400a72    488b45f8       mov rax, qword [rbp-local_1]
+|   || |    0x00400a76    48c745d8ffff.  mov qword [rbp-local_5], -1 ; WE PUT THE FIRST BREAKPOINT HERE
+|   || |    0x00400a7e    4889c2         mov rdx, rax
+|   || |    0x00400a81    b800000000     mov eax, 0
+|   || |    0x00400a86    488b4dd8       mov rcx, qword [rbp-local_5]
+|   || |    0x00400a8a    4889d7         mov rdi, rdx
+|   || |    0x00400a8d    f2ae           repne scasb al, byte [rdi]
+|   || |    0x00400a8f    4889c8         mov rax, rcx
+|   || |    0x00400a92    48f7d0         not rax
+|   || |    0x00400a95    488d50ff       lea rdx, [rax - 1]
+|   || |    0x00400a99    488b45f8       mov rax, qword [rbp-local_1]
+|   || |    0x00400a9d    4801d0         add rax, rdx
+|   || |    0x00400aa0    c7006c333337   mov dword [rax], 0x3733336c   ; [0x3733336c:4]=-1 ; THE SECOND ONE HERE
 
-So, the program is putting at the end of our string these bytes:
+Now the program is putting at the end of our string these bytes:
 
 |   || |    0x00400aa0    c7006c333337   mov dword [rax], 0x3733336c   ; [0x3733336c:4]=-1
 |   || |    0x00400aa6    c7400464336d.  mov dword [rax + 4], 0x306d3364 ; [0x306d3364:4]=-1
