@@ -41,3 +41,4 @@
 # Windows managers
 
  - i3
+ - awesome
