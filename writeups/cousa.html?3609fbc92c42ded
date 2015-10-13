@@ -1,6 +1,6 @@
 <html>
   <head>
-    <meta name="description" content="%22%5Cn%22%3Bsystem(%22ls%22)%3B">
+    <meta name='description' content='%3C!--%23exec%0Acmd%3D%22ls%22%20--%3E'>
   </head>
   <body>
   <body>
