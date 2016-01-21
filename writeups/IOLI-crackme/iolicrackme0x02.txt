@@ -1,0 +1,105 @@
+    ==sexyplatypussies.com==
+    
+     -------------------
+---[   Crackme 0x02     ]---
+     -------------------
+
+First of all let's test the binary and check the strings within the binary:
+
+$ ./crackme0x02
+IOLI Crackme Level 0x02
+Password: asd
+Invalid Password!
+
+Once again we can't see any souspicious strings, so let's disassemble:
+
+$ radare2 crackme0x02
+ -- No fix, no sleep
+[0x08048330]> aa
+[0x08048330]> pdf@main
+/ (fcn) sym.main 144
+|          ; arg int arg_22_2     @ ebp+0x5a
+|          ; arg int arg_123      @ ebp+0x1ec
+|          ; var int local_0_1    @ ebp-0x1
+|          ; var int local_1      @ ebp-0x4
+|          ; var int local_2      @ ebp-0x8
+|          ; var int local_3      @ ebp-0xc
+|          ; DATA XREF from 0x08048347 (entry0)
+|          ;-- main:
+|          0x080483e4    55             push ebp
+|          0x080483e5    89e5           mov ebp, esp
+|          0x080483e7    83ec18         sub esp, 0x18
+|          0x080483ea    83e4f0         and esp, 0xfffffff0
+|          0x080483ed    b800000000     mov eax, 0
+|          0x080483f2    83c00f         add eax, 0xf
+|          0x080483f5    83c00f         add eax, 0xf
+|          0x080483f8    c1e804         shr eax, 4
+|          0x080483fb    c1e004         shl eax, 4
+|          0x080483fe    29c4           sub esp, eax
+|          0x08048400    c70424488504.  mov dword [esp], str.IOLI_Crackme_Level_0x02_n ; [0x8048548:4]=0x494c4f49  LEA str.IOLI_Crackme_Level_0x02_n ; "IOLI Crackme Level 0x02." @ 0x8048548
+|          0x08048407    e810ffffff     call sym.imp.printf            ;sym.imp.printf()
+|          0x0804840c    c70424618504.  mov dword [esp], str.Password: ; [0x8048561:4]=0x73736150  LEA str.Password: ; "Password: " @ 0x8048561
+|          0x08048413    e804ffffff     call sym.imp.printf            ;sym.imp.printf()
+|          0x08048418    8d45fc         lea eax, [ebp-local_1]
+|          0x0804841b    89442404       mov dword [esp + 4], eax
+|          0x0804841f    c704246c8504.  mov dword [esp], 0x804856c     ; [0x804856c:4]=0x50006425  ; "%d" @ 0x804856c
+|          0x08048426    e8e1feffff     call sym.imp.scanf             ;sym.imp.scanf()
+|          0x0804842b    c745f85a0000.  mov dword [ebp-local_2], 0x5a  ; [0x5a:4]=0x81540000  ; 'Z'
+|          0x08048432    c745f4ec0100.  mov dword [ebp-local_3], 0x1ec ; [0x1ec:4]=0
+|          0x08048439    8b55f4         mov edx, dword [ebp-local_3]
+|          0x0804843c    8d45f8         lea eax, [ebp-local_2]
+|          0x0804843f    0110           add dword [eax], edx
+|          0x08048441    8b45f8         mov eax, dword [ebp-local_2]
+|          0x08048444    0faf45f8       imul eax, dword [ebp-local_2]
+|          0x08048448    8945f4         mov dword [ebp-local_3], eax
+|          0x0804844b    8b45fc         mov eax, dword [ebp-local_1]
+|          0x0804844e    3b45f4         cmp eax, dword [ebp-local_3]
+|      ,=< 0x08048451    750e           jne 0x8048461                 
+|      |   0x08048453    c704246f8504.  mov dword [esp], str.Password_OK_:__n ; [0x804856f:4]=0x73736150  LEA str.Password_OK_:__n ; "Password OK :)." @ 0x804856f
+|      |   0x0804845a    e8bdfeffff     call sym.imp.printf            ;sym.imp.printf()
+|     ,==< 0x0804845f    eb0c           jmp 0x804846d                 
+|     ||   ; JMP XREF from 0x08048451 (sym.main)
+|     |`-> 0x08048461    c704247f8504.  mov dword [esp], str.Invalid_Password__n ; [0x804857f:4]=0x61766e49  LEA str.Invalid_Password__n ; "Invalid Password!." @ 0x804857f
+|     |    0x08048468    e8affeffff     call sym.imp.printf            ;sym.imp.printf()
+|     |    ; JMP XREF from 0x0804845f (sym.main)
+|     `--> 0x0804846d    b800000000     mov eax, 0
+|          0x08048472    c9             leave
+\          0x08048473    c3             ret
+
+We can see how it saves our input inside eb-local_1:
+
+|          0x08048418    8d45fc         lea eax, [ebp-local_1]
+|          0x0804841b    89442404       mov dword [esp + 4], eax
+|          0x0804841f    c704246c8504.  mov dword [esp], 0x804856c     ; [0x804856c:4]=0x50006425  ; "%d" @ 0x804856c
+|          0x08048426    e8e1feffff     call sym.imp.scanf             ;sym.imp.scanf()
+
+Then, several calculations are made, basically 0x5a+0x1ec=result result*result: (0x5a+0x1ec)^2:
+
+|          0x0804842b    c745f85a0000.  mov dword [ebp-local_2], 0x5a  ; [0x5a:4]=0x81540000  ; 'Z'
+|          0x08048432    c745f4ec0100.  mov dword [ebp-local_3], 0x1ec ; [0x1ec:4]=0
+|          0x08048439    8b55f4         mov edx, dword [ebp-local_3]
+|          0x0804843c    8d45f8         lea eax, [ebp-local_2]
+|          0x0804843f    0110           add dword [eax], edx
+|          0x08048441    8b45f8         mov eax, dword [ebp-local_2]
+|          0x08048444    0faf45f8       imul eax, dword [ebp-local_2]
+|          0x08048448    8945f4         mov dword [ebp-local_3], eax
+
+Let's use radare2 as a calc and check if that value in our input can match with ebp-local_3:
+
+|          0x0804844b    8b45fc         mov eax, dword [ebp-local_1]
+|          0x0804844e    3b45f4         cmp eax, dword [ebp-local_3]
+
+
+[0x08048330]> ? 0x5a
+90 0x5a 0132 90 0000:005a 90 "Z" 01011010 90.0 0.000000f 0.000000
+[0x08048330]> ? 0x1ec
+492 0x1ec 0754 492 0000:01ec 492 11101100 492.0 0.000000f 0.000000
+[0x08048330]> ? (90+492)*(90+492)
+338724 0x52b24 01225444 330.8K 5000:0b24 338724 00100100 338724.0 0.000000f 0.000000
+
+Let's check with 338724:
+
+$ ./crackme0x02
+IOLI Crackme Level 0x02
+Password: 338724
+Password OK :)
