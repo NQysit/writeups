@@ -62,4 +62,4 @@ Podemos ver:
 |          0x08048466    890424         mov dword [esp], eax
 |          0x08048469    e8e2feffff     call sym.imp.strcmp
 
-We can se a call to strcmp where it gets esp and esp+4 as value: our value and str.250382
+We can see a call to strcmp where it gets esp and esp+4 as value: our value and str.250382
