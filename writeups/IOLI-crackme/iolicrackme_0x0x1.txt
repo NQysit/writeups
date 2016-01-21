@@ -1,0 +1,79 @@
+    ==sexyplatypussies.com==
+
+     -------------------
+---[     Crackme 0x01   ]---
+     -------------------
+
+The beginning will be always the same, we will test the binary and then we will
+check the strings within the binary using rabin2 -z.
+
+$ ./crackme0x01
+IOLI Crackme Level 0x01
+Password: asd
+Invalid Password!
+
+We can't see any souspicious string, so let's disassemble:
+
+$ radare2 crackme0x01
+ -- Please register your copy of r2 today! Only £29.90!
+[0x08048330]> aa
+[0x08048330]> pdf@main
+/ (fcn) sym.main 113
+|          ; arg int arg_1318_2   @ ebp+0x149a
+|          ; var int local_1      @ ebp-0x4
+|          ; DATA XREF from 0x08048347 (entry0)
+|          ;-- main:
+|          0x080483e4    55             push ebp
+|          0x080483e5    89e5           mov ebp, esp
+|          0x080483e7    83ec18         sub esp, 0x18
+|          0x080483ea    83e4f0         and esp, 0xfffffff0
+|          0x080483ed    b800000000     mov eax, 0
+|          0x080483f2    83c00f         add eax, 0xf
+|          0x080483f5    83c00f         add eax, 0xf
+|          0x080483f8    c1e804         shr eax, 4
+|          0x080483fb    c1e004         shl eax, 4
+|          0x080483fe    29c4           sub esp, eax
+|          0x08048400    c70424288504.  mov dword [esp], str.IOLI_Crackme_Level_0x01_n ; [0x8048528:4]=0x494c4f49  LEA str.IOLI_Crackme_Level_0x01_n ; "IOLI Crackme Level 0x01." @ 0x8048528
+|          0x08048407    e810ffffff     call sym.imp.printf
+|            ^- sym.imp.printf()
+|          0x0804840c    c70424418504.  mov dword [esp], str.Password: ; [0x8048541:4]=0x73736150  LEA str.Password: ; "Password: " @ 0x8048541
+|          0x08048413    e804ffffff     call sym.imp.printf
+|            ^- sym.imp.printf()
+|          0x08048418    8d45fc         lea eax, [ebp-local_1]
+|          0x0804841b    89442404       mov dword [esp + 4], eax
+|          0x0804841f    c704244c8504.  mov dword [esp], 0x804854c     ; [0x804854c:4]=0x49006425  ; "%d" @ 0x804854c
+|          0x08048426    e8e1feffff     call sym.imp.scanf
+|            ^- sym.imp.scanf()
+|          0x0804842b    817dfc9a1400.  cmp dword [ebp-local_1], 0x149a ; [0x149a:4]=0x2ec0804 
+|      ,=< 0x08048432    740e           je 0x8048442                  
+|      |   0x08048434    c704244f8504.  mov dword [esp], str.Invalid_Password__n ; [0x804854f:4]=0x61766e49  LEA str.Invalid_Password__n ; "Invalid Password!." @ 0x804854f
+|      |   0x0804843b    e8dcfeffff     call sym.imp.printf
+|      |     ^- sym.imp.printf()
+|     ,==< 0x08048440    eb0c           jmp 0x804844e                 
+|     ||   ; JMP XREF from 0x08048432 (sym.main)
+|     |`-> 0x08048442    c70424628504.  mov dword [esp], str.Password_OK_:__n ; [0x8048562:4]=0x73736150  LEA str.Password_OK_:__n ; "Password OK :)." @ 0x8048562
+|     |    0x08048449    e8cefeffff     call sym.imp.printf
+|     |      ^- sym.imp.printf()
+|     |    ; JMP XREF from 0x08048440 (sym.main)
+|     `--> 0x0804844e    b800000000     mov eax, 0
+|          0x08048453    c9             leave
+\          0x08048454    c3             ret
+
+
+If we look the disassemble there are nothing weird, the stack is prepared, it prints several strings and then
+we can see a scanf, that will be our input. Finally, before the output "Invalid Password!/Password OK :)" it mades
+a comparation between our input with 0x149a as we can see:
+
+|          0x0804842b    817dfc9a1400.  cmp dword [ebp-local_1], 0x149a ; [0x149a:4]=0x2ec0804
+
+We can check the value using radare2 like this.
+
+[0x08048330]> ? 0x149a
+5274 0x149a 012232 5.2K 0000:049a 5274 10011010 5274.0 0.000000f 0.000000
+
+Let's check with 5274:
+
+$ ./crackme0x01
+IOLI Crackme Level 0x01
+Password: 5274
+Password OK :)
