@@ -1,0 +1,65 @@
+    ==sexyplatypussies.com==
+
+     -------------------
+---[     Crackme 0x00   ]---
+     -------------------
+
+This is the first crackme, the difficult should increase with the level so this should
+be pretty easy.
+
+Let's start:
+
+$ ./crackme0x00
+IOLI Crackme Level 0x00
+Password: 15 
+Invalid Password!
+
+We need a password, we try "15" and finally we can see "Invalid Password!".
+A first step in this kind of crackmes would be to check the string within the binary
+and try to get the password or some info in plain text. To this we can use rabin2 which
+is a tool inside radare to work with binary files, so, we can check the string within
+this crackme with the following: 
+
+$ rabin2 -z crackme0x00
+... string=IOLI Crackme Level 0x00\n
+... string=Password: 
+... string=250382
+... string=Invalid Password!\n
+... string=Password OK :)\n
+
+Let's check with "250382":
+
+$ ./crackme0x00
+IOLI Crackme Level 0x00
+Password: 250382
+Password OK :)
+
+Also we can dissasemble like this, but we don't need it.
+
+$ radare2 crackme0x00
+ -- It's the year of desktop on radare2
+[0x08048360]> aa
+[0x08048360]> pdf@main
+
+Podemos ver:
+
+0x08048430    c70424688504.  mov dword [esp], str.IOLI_Crackme_Level_0x00_n 
+; [0x8048568:4]=0x494c4f49  LEA str.IOLI_Crackme_Level_0x00_n ; "IOLI Crackme Level 0x00." @ 0x8048568
+|          0x08048437    e804ffffff     call sym.imp.printf
+|            ^- sym.imp.printf()
+|          0x0804843c    c70424818504.  mov dword [esp], str.Password: ; [0x8048581:4]=0x73736150  LEA str.Password: 
+; "Password: " @ 0x8048581
+|          0x08048443    e8f8feffff     call sym.imp.printf
+|            ^- sym.imp.printf()
+|          0x08048448    8d45e8         lea eax, [ebp-local_6]
+|          0x0804844b    89442404       mov dword [esp + 4], eax
+|          0x0804844f    c704248c8504.  mov dword [esp], 0x804858c     ; [0x804858c:4]=0x32007325  ; "%s" @ 0x804858c
+|          0x08048456    e8d5feffff     call sym.imp.scanf
+|            ^- sym.imp.scanf()
+|          0x0804845b    8d45e8         lea eax, [ebp-local_6]
+|          0x0804845e    c74424048f85.  mov dword [esp + 4], str.250382 ; [0x804858f:4]=0x33303532  LEA str.250382 
+; "250382" @ 0x804858f
+|          0x08048466    890424         mov dword [esp], eax
+|          0x08048469    e8e2feffff     call sym.imp.strcmp
+
+We can se a call to strcmp where it gets esp and esp+4 as value: our value and str.250382
