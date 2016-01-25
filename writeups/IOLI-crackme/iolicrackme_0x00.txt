@@ -4,8 +4,8 @@
 ---[     Crackme 0x00   ]---
      -------------------
 
-This is the first crackme, the difficult should increase with the level so this should
-be pretty easy.
+This is the first crackme, the difficult should increase with each level so this one
+should be pretty easy.
 
 Let's start:
 
