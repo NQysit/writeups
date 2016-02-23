@@ -1,0 +1,179 @@
+Team: sexyplatypussies
+Author: k1k3
+
+________________________Writeup "PROCASTINATION" (Crypto80) internetwache CTF___________________________
+
+In this challenge we have a webpage with the RickRoll'D video of Rick Astley and a file crypto80.zip
+I started watching this video but as the name of this task is "Procrastination" lead me to think that 
+I shouldn't continue wasting time and analyze the .zip file.
+
+k1k3@Jalp0n:~/CTF/internetwache/CRYPTO/crypto80$ unzip crypto80.zip
+
+After decompressing the file we have the same video inside the task folder
+
+k1k3@Jalp0n:~/CTF/internetwache/CRYPTO/crypto80/task$ ls
+song.webm
+
+k1k3@Jalp0n:~/CTF/internetwache/CRYPTO/crypto80/task$ avidemux song.webm &
+
+I opened the video in the avidemux video editor and I found that have two audio tracks.
+After muting the song track I played the video again and I eared the tones of an electronic DTMF
+keyboard that's a kind of keyboard which beeps with two tones in two different frequencies and the 
+flag could be encoded using DTMF.
+
+I extract the audio file with the DTMF tones using avidemux, going to Audio > Select Track and 
+configuring the mp3(lame) decoder. After this I saved it as tonos.mp3 going to Audio > Save audio.
+
+k1k3@Jalp0n:~/CTF/internetwache/CRYPTO/crypto80/task$ audacity tonos.mp3 &
+
+I decoded the keys pressed by the hard way using audacity and the spectrum analyzer with peak detector
+for finding the two frequency peaks. For this, I select the beam tone individually in the time domain
+ang I go to Analize > Spectrum analisis...
+
+In a new window appears the signal plotted in the frequency domain and we could identify the two 
+frequencies with the maximum amplitude using the peak detector moving the cursor.
+
+              942 Hz
+            /  
+           /    1336Hz
+          /    /  
+         ..   ..
+        . .   . .
+       .  .   .  .
+      .    ...    .
+     .             .
+    .               . 
+   .                 .  
+_ .                   .
+                       ._
+
+
+The relationship between the key pressed in the keyboard and the frequencies that identifies it 
+can be seen in the following table:
+
+------------------------------------------------
+|########| 1209 Hz | 1336 Hz | 1477 Hz | 1633Hz|
+------------------------------------------------
+| 697 Hz |    1    |    2    |    3    |   A   |       
+------------------------------------------------
+| 770 Hz |    4    |    5    |    6    |   B   |
+------------------------------------------------
+| 852 Hz |    7    |    8    |    9    |   C   |
+------------------------------------------------
+| 941 Hz |    *    |    0    |    #    |   D   | 
+------------------------------------------------
+
+I note the two frequencies values and approached it to the table values.
+
+               _
+942 ---> 941 Hz |
+                |---- 0
+1336 --> 1336 Hz|
+               --
+
+If we do the same for the rest of the tones we get all the keys.
+
+ 
+Affortunately another way for get the keys is using multimon software that automatically decode all the keys.
+I export the audio file in format .wav using audacity.
+
+k1k3@Jalp0n:~/CTF/internetwache/CRYPTO/crypto80/task$ multimon -a DTMF -t wav tonos.wav
+multimod  (C) 1996/1997 by Tom Sailer HB9JNX/AE4WA
+available demodulators: POCSAG512 POCSAG1200 POCSAG2400 EAS AFSK1200 AFSK2400 AFSK2400_2 HAPN4800 FSK9600 DTMF ZVEI CCIR SCOPE
+Enabled demodulators: DTMF
+sox WARN sox: Option `-s' is deprecated, use `-e signed-integer' instead.
+sox WARN sox: Option `-2' is deprecated, use `-b 16' instead.
+DTMF: 0
+DTMF: 1
+DTMF: 1
+DTMF: 1
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 7
+DTMF: 0
+DTMF: 1
+DTMF: 7
+DTMF: 3
+DTMF: 0
+DTMF: 1
+DTMF: 0
+DTMF: 4
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 2
+DTMF: 0
+DTMF: 6
+DTMF: 0
+DTMF: 0
+DTMF: 1
+DTMF: 1
+DTMF: 6
+DTMF: 0
+DTMF: 6
+DTMF: 3
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 3
+DTMF: 0
+DTMF: 1
+DTMF: 3
+DTMF: 7
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 7
+DTMF: 0
+DTMF: 6
+DTMF: 1
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 4
+DTMF: 0
+DTMF: 1
+DTMF: 1
+DTMF: 0
+DTMF: 0
+DTMF: 1
+DTMF: 3
+DTMF: 7
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 0
+DTMF: 0
+DTMF: 1
+DTMF: 1
+DTMF: 0
+DTMF: 0
+DTMF: 6
+DTMF: 0
+DTMF: 0
+DTMF: 1
+DTMF: 1
+DTMF: 6
+DTMF: 0
+DTMF: 6
+DTMF: 3
+DTMF: 0
+DTMF: 1
+DTMF: 2
+DTMF: 3
+
+
+Finally the string of the pushed KEYS is: 0111012701730104012206001160630123013701270610124011001370120011006001160630123
+
+In this string of numbers we can see data in octal after the zeros and I decoded it using python.
+
+k1k3@Jalp0n:~/CTF/internetwache/CRYPTO/crypto80/task$ python
+Python 2.7.9 (default, Mar  1 2015, 12:57:24) 
+[GCC 4.9.2] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> b'\111\127\173\104\122\060\116\063\123\137\127\061\124\110\137\120\110\060\116\063\123'.decode('utf-8')
+u'IW{DR0N3S_W1TH_PH0N3S'
+
+FLAG: IW{DR0N3S_W1TH_PH0N3S}
+

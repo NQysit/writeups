@@ -27,6 +27,13 @@
 
  - maltego
  - metasploit
+
+# Steganography
+
+ - hexdump
+ - audacity
+ - avidemux
+ - multimon
  
 # Search engines
 
@@ -42,3 +49,4 @@
 
  - i3
  - awesome
+
